@@ -58,14 +58,14 @@ def uavid2rgb(mask):
     h, w = mask.shape[0], mask.shape[1]
     mask_rgb = np.zeros(shape=(h, w, 3), dtype=np.uint8)
     mask_convert = mask[np.newaxis, :, :]
-    mask_rgb[np.all(mask_convert == 0, axis=0)] = [128, 0, 0]
+    #mask_rgb[np.all(mask_convert == 0, axis=0)] = [128, 0, 0]
     mask_rgb[np.all(mask_convert == 1, axis=0)] = [128, 64, 128]
-    mask_rgb[np.all(mask_convert == 2, axis=0)] = [0, 128, 0]
-    mask_rgb[np.all(mask_convert == 3, axis=0)] = [128, 128, 0]
-    mask_rgb[np.all(mask_convert == 4, axis=0)] = [64, 0, 128]
-    mask_rgb[np.all(mask_convert == 5, axis=0)] = [192, 0, 192]
-    mask_rgb[np.all(mask_convert == 6, axis=0)] = [64, 64, 0]
-    mask_rgb[np.all(mask_convert == 7, axis=0)] = [0, 0, 0]
+    #mask_rgb[np.all(mask_convert == 2, axis=0)] = [0, 128, 0]
+    #mask_rgb[np.all(mask_convert == 3, axis=0)] = [128, 128, 0]
+    #mask_rgb[np.all(mask_convert == 4, axis=0)] = [64, 0, 128]
+    #mask_rgb[np.all(mask_convert == 5, axis=0)] = [192, 0, 192]
+    #mask_rgb[np.all(mask_convert == 6, axis=0)] = [64, 64, 0]
+    #mask_rgb[np.all(m)mask_convert == 7, axis=0)] = [0, 0, 0]
     mask_rgb = cv2.cvtColor(mask_rgb, cv2.COLOR_RGB2BGR)
     return mask_rgb
 
@@ -139,6 +139,7 @@ def make_dataset_for_one_huge_image(img_path, patch_size):
         for y in range(0, output_width, patch_size[1]):
             image_tile = image_pad[x:x+patch_size[0], y:y+patch_size[1]]
             tile_list.append(image_tile)
+            #print(tile_list)
 
     dataset = InferenceDataset(tile_list=tile_list)
     return dataset, width_pad, height_pad, output_width, output_height, image_pad, img.shape
@@ -182,6 +183,9 @@ def main():
         output_path = os.path.join(args.output_path, str(seq), 'Labels')
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+        output_resut_path = os.path.join(args.output_path, str(seq), 'Result')
+        if not os.path.exists(output_resut_path):
+            os.makedirs(output_resut_path)
         for ext in ('*.tif', '*.png', '*.jpg'):
             img_paths.extend(glob.glob(os.path.join(args.image_path, str(seq), 'Images', ext)))
         img_paths.sort()
@@ -232,7 +236,37 @@ def main():
                 output_mask = output_mask
             assert img_shape == output_mask.shape
             cv2.imwrite(os.path.join(output_path, img_name), output_mask)
+            print(img_path)
+            Combine(img_path,os.path.join(output_path, img_name),os.path.join(output_resut_path,img_name))
 
+
+def Combine(image,mask,outimgpath):
+    image = cv2.imread(image)
+    mask = cv2.imread(mask)
+    # Blend the mask with the image
+    alpha = 0.5  # Adjust transparency here if needed
+    blended = cv2.addWeighted(image, alpha, mask, 1 - alpha, 0)
+
+    # Add a label to the image
+    label_text = 'Segmented Road'
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    org = (50, 50)  # Adjust label position as needed
+    font_scale = 1
+    color = (255, 255, 255)  # White color
+    thickness = 2
+    blended_labeled = cv2.putText(blended, label_text, org, font, font_scale, color, thickness, cv2.LINE_AA)
+
+    # Display or save the labeled image
+    # cv2.imshow('Labeled Image', blended_labeled)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    # Save the labeled image
+    try:
+        cv2.imwrite(outimgpath, blended_labeled)
+        print("good to go")
+    except Exception as ex:
+        print(ex)
 
 if __name__ == "__main__":
     main()
