@@ -10,7 +10,7 @@ from catalyst.contrib.nn import Lookahead
 from catalyst import utils
 
 # training hparam
-max_epoch = 40
+max_epoch = 120
 ignore_index = 255
 train_batch_size = 8
 val_batch_size = 8
